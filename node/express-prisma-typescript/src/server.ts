@@ -6,7 +6,7 @@ import cors from 'cors'
 import { Constants, NodeEnv, Logger } from '@utils'
 import { router } from '@router'
 import { ErrorHandling } from '@utils/errors'
-
+import { swaggerSpec, swaggerUi } from '@swagger'
 const app = express()
 
 // Set up request logger
@@ -26,6 +26,7 @@ app.use(
   })
 )
 
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 app.use('/api', router)
 
 app.use(ErrorHandling)

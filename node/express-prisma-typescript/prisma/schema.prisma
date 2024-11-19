@@ -5,7 +5,8 @@
 // The prisma-client-js is the default generator that builds ts types based on the db models.
 // You can find more about generators here: https://www.prisma.io/docs/concepts/components/prisma-schema/generators
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema", "tracing"] // TODO a chckear
 }
 
 // The datasource block specifies the url to your DBMS.
@@ -28,9 +29,20 @@ model User {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime? // Optional value
 
-  posts     Post[]
-  follows   Follow[] @relation(name: "follows")
-  followers Follow[] @relation(name: "followers")
+  posts            Post[]
+  follows          Follow[]           @relation(name: "follows")
+  followers        Follow[]           @relation(name: "followers")
+  accountPrivacy   AccountPrivacyType @relation(fields: [accountPrivacyId], references: [id])
+  accountPrivacyId String             @db.Uuid
+  permissions      UserPermission[]
+  reactions        PostReaction[]
+}
+
+model AccountPrivacyType {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid // Primary Key
+
+  name String @unique // Unique constraint
+  User User[] // One to many
 }
 
 model Follow {
@@ -45,6 +57,8 @@ model Follow {
 
   follower User @relation(name: "follows", fields: [followerId], references: [id], onDelete: Cascade) // One to many
   followed User @relation(name: "followers", fields: [followedId], references: [id], onDelete: Cascade) // One to many
+
+  @@unique([followerId, followedId])
 }
 
 model Post {
@@ -54,9 +68,59 @@ model Post {
   content  String   @db.VarChar(240) // Limit the content to 240 characters
   images   String[]
 
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  deletedAt  DateTime? // Optional value
+  likes      PostReaction[]
+  likesCount Int            @default(0)
+
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade) // One to many
+}
+
+model UserPermissionType {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid // Primary Key
+
+  name           String           @unique // Unique constraint
+  UserPermission UserPermission[] // One to many
+}
+
+model UserPermission {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid // Primary Key
+
+  userId String @db.Uuid // Foreign Key
+  typeId String @db.Uuid // Foreign Key
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime? // Optional value
 
-  author User @relation(fields: [authorId], references: [id], onDelete: Cascade) // One to many
+  user User               @relation(fields: [userId], references: [id], onDelete: Cascade) // One to many
+  type UserPermissionType @relation(fields: [typeId], references: [id], onDelete: Cascade) // One to many
+
+  @@unique([userId, typeId])
+}
+
+model PostReactionType {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid // Primary Key
+
+  name         String         @unique // Unique constraint
+  PostReaction PostReaction[] // One to many
+}
+
+model PostReaction {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid // Primary Key
+
+  userId String @db.Uuid // Foreign Key
+  postId String @db.Uuid // Foreign Key
+  typeId String @db.Uuid // Foreign Key
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Optional value
+
+  user User             @relation(fields: [userId], references: [id], onDelete: Cascade) // One to many
+  post Post             @relation(fields: [postId], references: [id], onDelete: Cascade) // One to many
+  type PostReactionType @relation(fields: [typeId], references: [id], onDelete: Cascade) // One to many
+
+  @@unique([userId, postId, typeId])
 }

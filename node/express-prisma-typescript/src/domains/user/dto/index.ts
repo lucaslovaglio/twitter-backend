@@ -3,11 +3,13 @@ export class UserDTO {
     this.id = user.id
     this.name = user.name
     this.createdAt = user.createdAt
+    this.accountPrivacyId = user.accountPrivacyId
   }
 
   id: string
   name: string | null
   createdAt: Date
+  accountPrivacyId: string
 }
 
 export class ExtendedUserDTO extends UserDTO {
@@ -34,4 +36,9 @@ export class UserViewDTO {
   name: string
   username: string
   profilePicture: string | null
+}
+
+export enum AccountPrivacyType {
+  PUBLIC = 'PUBLIC',
+  PRIVATE = 'PRIVATE'
 }

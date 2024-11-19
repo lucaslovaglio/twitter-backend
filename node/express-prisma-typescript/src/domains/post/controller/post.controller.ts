@@ -44,6 +44,7 @@ postRouter.get('/by_user/:userId', async (req: Request, res: Response) => {
 postRouter.post('/', BodyValidation(CreatePostInputDTO), async (req: Request, res: Response) => {
   const { userId } = res.locals.context
   const data = req.body
+  console.log('Data: ', data)
 
   const post = await service.createPost(userId, data)
 

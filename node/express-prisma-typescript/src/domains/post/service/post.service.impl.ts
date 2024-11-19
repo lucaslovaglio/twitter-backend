@@ -2,11 +2,17 @@ import { CreatePostInputDTO, PostDTO } from '../dto'
 import { PostRepository } from '../repository'
 import { PostService } from '.'
 import { validate } from 'class-validator'
-import { ForbiddenException, NotFoundException } from '@utils'
+import { ForbiddenException, NotFoundException, db } from '@utils'
 import { CursorPagination } from '@types'
+import { FollowerService } from '@domains/follower/service/follower.service'
+import { FollowerServiceImpl } from '@domains/follower/service/follower.service.impl'
+import { FollowerRepositoryImpl } from '@domains/follower/repository'
 
 export class PostServiceImpl implements PostService {
-  constructor (private readonly repository: PostRepository) {}
+  constructor (
+    private readonly repository: PostRepository,
+    private readonly followerService: FollowerService = new FollowerServiceImpl(new FollowerRepositoryImpl(db)) // TODO: sacar esto
+  ) {}
 
   async createPost (userId: string, data: CreatePostInputDTO): Promise<PostDTO> {
     await validate(data)
@@ -29,6 +35,12 @@ export class PostServiceImpl implements PostService {
 
   async getLatestPosts (userId: string, options: CursorPagination): Promise<PostDTO[]> {
     // TODO: filter post search to return posts from authors that the user follows
+    const followedAuthors = await this.followerService.getFollowing(userId)
+
+    if (!followedAuthors.length) {
+      // return []
+    }
+    console.log('options', options)
     return await this.repository.getAllByDatePaginated(options)
   }
 
