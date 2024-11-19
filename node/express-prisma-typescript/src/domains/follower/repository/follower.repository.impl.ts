@@ -6,12 +6,13 @@ export class FollowerRepositoryImpl implements FollowerRepository {
   constructor (private readonly db: PrismaClient) {}
 
   async create (followerId: string, followedId: string): Promise<FollowDTO> {
-    return await this.db.follow.create({
+    const follow = await this.db.follow.create({
       data: {
         followerId,
         followedId
       }
-    }).then(follow => new FollowDTO(follow))
+    })
+    return new FollowDTO(follow)
   }
 
   async delete (followerId: string, followedId: string): Promise<void> {
@@ -33,5 +34,25 @@ export class FollowerRepositoryImpl implements FollowerRepository {
     })
     return followers.map(follow => new FollowDTO(follow))
   }
-}
 
+  async getFollowing (followerId: string): Promise<FollowDTO[]> {
+    const following = await this.db.follow.findMany({
+      where: {
+        followerId
+      }
+    })
+    return following.map(follow => new FollowDTO(follow))
+  }
+
+  async isFollowing (followerId: string, followedId: string): Promise<boolean> {
+    const follow = await this.db.follow.findUnique({
+      where: {
+        followerId_followedId: {
+          followerId,
+          followedId
+        }
+      }
+    })
+    return !!follow
+  }
+}

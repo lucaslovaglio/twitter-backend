@@ -5,6 +5,30 @@ import { CursorPagination } from '@types'
 import { PostRepository } from '.'
 import { CreatePostInputDTO, PostDTO } from '../dto'
 
+interface VisibilityFilter {
+  OR: Array<{
+    author: {
+      accountPrivacy: {
+        name: string
+      }
+    }
+  } | {
+    author: {
+      followers: {
+        some: {
+          followerId: string
+        }
+      }
+    }
+  }>
+}
+
+interface PaginationOptions {
+  cursor?: { id: string }
+  skip?: number
+  take?: number
+}
+
 export class PostRepositoryImpl implements PostRepository {
   constructor (private readonly db: PrismaClient) {}
 
@@ -18,11 +42,17 @@ export class PostRepositoryImpl implements PostRepository {
     return new PostDTO(post)
   }
 
-  async getAllByDatePaginated (options: CursorPagination): Promise<PostDTO[]> {
+  async getAllByDatePaginated (
+    userId: string,
+    options: CursorPagination
+  ): Promise<PostDTO[]> {
+    const visibilityFilter = this.getVisibilityFilter(userId)
+
+    const paginationOptions = this.getPaginationOptions(options)
+
     const posts = await this.db.post.findMany({
-      cursor: options.after ? { id: options.after } : (options.before) ? { id: options.before } : undefined,
-      skip: options.after ?? options.before ? 1 : undefined,
-      take: options.limit ? (options.before ? -options.limit : options.limit) : undefined,
+      where: visibilityFilter,
+      ...paginationOptions,
       orderBy: [
         {
           createdAt: 'desc'
@@ -30,9 +60,44 @@ export class PostRepositoryImpl implements PostRepository {
         {
           id: 'asc'
         }
-      ]
+      ],
+      include: {
+        author: true
+      }
     })
-    return posts.map(post => new PostDTO(post))
+
+    return posts.map((post) => new PostDTO(post))
+  }
+
+  private getVisibilityFilter (userId: string): VisibilityFilter {
+    return {
+      OR: [
+        {
+          author: {
+            accountPrivacy: {
+              name: 'public'
+            }
+          }
+        },
+        {
+          author: {
+            followers: {
+              some: {
+                followerId: userId
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+
+  private getPaginationOptions (options: CursorPagination): PaginationOptions {
+    return {
+      cursor: options.after ? { id: options.after } : (options.before) ? { id: options.before } : undefined,
+      skip: options.after ?? options.before ? 1 : undefined,
+      take: options.limit ? (options.before ? -options.limit : options.limit) : undefined
+    }
   }
 
   async delete (postId: string): Promise<void> {

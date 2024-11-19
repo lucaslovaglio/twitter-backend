@@ -1,3 +1,5 @@
+import { AccountPrivacyEnum } from '@domains/user/type';
+
 export class UserDTO {
   constructor (user: UserDTO) {
     this.id = user.id
@@ -38,7 +40,10 @@ export class UserViewDTO {
   profilePicture: string | null
 }
 
-export enum AccountPrivacyType {
-  PUBLIC = 'PUBLIC',
-  PRIVATE = 'PRIVATE'
+export class AccountPrivacyDTO {
+  constructor (accountPrivacy: AccountPrivacyDTO) {
+    this.name = accountPrivacy.name
+  }
+
+  name: AccountPrivacyEnum
 }

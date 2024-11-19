@@ -10,7 +10,7 @@ import {
 
 import { LoginInputDTO, SignupInputDTO, TokenDTO } from '../dto'
 import { AuthService } from './auth.service'
-import { AccountPrivacyType } from '@domains/user/dto'
+import { AccountPrivacyEnum } from '@domains/user/type'
 
 export class AuthServiceImpl implements AuthService {
   constructor (private readonly repository: UserRepository) {}
@@ -21,7 +21,7 @@ export class AuthServiceImpl implements AuthService {
 
     const encryptedPassword = await encryptPassword(data.password)
 
-    const user = await this.repository.create({ ...data, password: encryptedPassword }, AccountPrivacyType.PUBLIC)
+    const user = await this.repository.create({ ...data, password: encryptedPassword }, AccountPrivacyEnum.PUBLIC)
     const token = generateAccessToken({ userId: user.id })
 
     return { token }

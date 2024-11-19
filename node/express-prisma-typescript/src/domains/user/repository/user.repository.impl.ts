@@ -1,13 +1,15 @@
 import { SignupInputDTO } from '@domains/auth/dto'
 import { PrismaClient } from '@prisma/client'
 import { OffsetPagination } from '@types'
-import { ExtendedUserDTO, UserDTO, AccountPrivacyType } from '../dto'
+import { ExtendedUserDTO, UserDTO } from '../dto'
 import { UserRepository } from './user.repository'
+import { AccountPrivacyEnum } from '@domains/user/type'
 
 export class UserRepositoryImpl implements UserRepository {
-  constructor (private readonly db: PrismaClient) {}
+  constructor (private readonly db: PrismaClient) {
+  }
 
-  async create (data: SignupInputDTO, accountPrivacy: AccountPrivacyType): Promise<UserDTO> {
+  async create (data: SignupInputDTO, accountPrivacy: AccountPrivacyEnum): Promise<UserDTO> {
     const accountPrivacyId = await this.getAccountPrivacyId(accountPrivacy)
     const user = await this.db.user.create({
       data: {
@@ -18,7 +20,7 @@ export class UserRepositoryImpl implements UserRepository {
     return new UserDTO(user)
   }
 
-  async getAccountPrivacyId (accountPrivacy: AccountPrivacyType): Promise<string> {
+  async getAccountPrivacyId (accountPrivacy: AccountPrivacyEnum): Promise<string> {
     const privacy = await this.db.accountPrivacyType.findFirst({
       where: {
         name: accountPrivacy
@@ -71,5 +73,24 @@ export class UserRepositoryImpl implements UserRepository {
       }
     })
     return user ? new ExtendedUserDTO(user) : null
+  }
+
+  async changeAccountPrivacy (userId: any, accountPrivacy: AccountPrivacyEnum): Promise<void> {
+    const accountPrivacyId = await this.getAccountPrivacyId(accountPrivacy)
+    await this.db.user.update({
+      where: {
+        id: userId
+      },
+      data: {
+        accountPrivacyId
+      }
+    })
+  }
+
+  async getPrivacyType (accountPrivacyId: string): Promise<AccountPrivacyEnum> {
+    const privacy = await this.db.accountPrivacyType.findUnique({
+      where: { id: accountPrivacyId }
+    })
+    return privacy ? privacy.name as AccountPrivacyEnum : AccountPrivacyEnum.PUBLIC
   }
 }
