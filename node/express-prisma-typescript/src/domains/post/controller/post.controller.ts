@@ -3,16 +3,16 @@ import HttpStatus from 'http-status'
 // express-async-errors is a module that handles async errors in express, don't forget import it in your new controllers
 import 'express-async-errors'
 
-import { db, BodyValidation } from '@utils'
+import { BodyValidation } from '@utils'
 
-import { PostRepositoryImpl } from '../repository'
-import { PostService, PostServiceImpl } from '../service'
+import { PostService } from '../service'
 import { CreatePostInputDTO } from '../dto'
+import { postService } from '@domains/post/factory'
 
 export const postRouter = Router()
 
 // Use dependency injection
-const service: PostService = new PostServiceImpl(new PostRepositoryImpl(db))
+const service: PostService = postService
 
 postRouter.get('/', async (req: Request, res: Response) => {
   const { userId } = res.locals.context
@@ -44,7 +44,6 @@ postRouter.get('/by_user/:userId', async (req: Request, res: Response) => {
 postRouter.post('/', BodyValidation(CreatePostInputDTO), async (req: Request, res: Response) => {
   const { userId } = res.locals.context
   const data = req.body
-  console.log('Data: ', data)
 
   const post = await service.createPost(userId, data)
 

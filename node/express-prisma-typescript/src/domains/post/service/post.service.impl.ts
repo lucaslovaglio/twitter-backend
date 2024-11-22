@@ -6,6 +6,8 @@ import { ForbiddenException, NotFoundException } from '@utils'
 import { CursorPagination } from '@types'
 import { FollowerService } from '@domains/follower/service/follower.service'
 import { UserService } from '@domains/user/service'
+import { ReactionTypeEnum } from '@domains/reaction/type'
+import { ReactionTypeDTO } from '@domains/reaction/dto';
 
 export class PostServiceImpl implements PostService {
   constructor (
@@ -28,9 +30,10 @@ export class PostServiceImpl implements PostService {
 
   async getPost (userId: string, postId: string): Promise<PostDTO> {
     const post = await this.repository.getById(postId)
-    if (!post || await this.canViewPost(userId, post.authorId)) {
+    if (!post) {
       throw new NotFoundException('post')
     }
+    await this.checkPostAccess(userId, post.authorId)
     return post
   }
 
@@ -39,14 +42,26 @@ export class PostServiceImpl implements PostService {
   }
 
   async getPostsByAuthor (userId: any, authorId: string): Promise<PostDTO[]> {
-    if (await this.canViewPost(userId, authorId)) {
-      throw new NotFoundException('post')
-    }
+    await this.checkPostAccess(userId, authorId)
     return await this.repository.getByAuthorId(authorId)
   }
 
-  private async canViewPost (userId: string, authorId: string): Promise<boolean> {
+  async canViewPost (userId: string, authorId: string): Promise<boolean> {
     return !await this.isPrivateProfile(authorId) || await this.isFollowing(userId, authorId)
+  }
+
+  async checkPostAccess (userId: string, postId: string): Promise<void> {
+    if (!await this.canViewPost(userId, postId)) {
+      throw new NotFoundException('post')
+    }
+  }
+
+  async incrementReactionCount (postId: string, reactionType: ReactionTypeDTO): Promise<void> {
+    await this.repository.incrementReaction(postId, reactionType)
+  }
+
+  async decrementReactionCount (postId: string, reactionType: ReactionTypeDTO): Promise<void> {
+    await this.repository.decrementReaction(postId, reactionType)
   }
 
   private async isPrivateProfile (authorId: string): Promise<boolean> {

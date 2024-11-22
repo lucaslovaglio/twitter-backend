@@ -1,32 +1,36 @@
 import { SignupInputDTO } from '@domains/auth/dto'
 import { PrismaClient } from '@prisma/client'
 import { OffsetPagination } from '@types'
-import { ExtendedUserDTO, UserDTO } from '../dto'
+import { AccountPrivacyDTO, ExtendedUserDTO, UserDTO } from '../dto'
 import { UserRepository } from './user.repository'
 import { AccountPrivacyEnum } from '@domains/user/type'
+import { NotFoundException } from '@utils'
 
 export class UserRepositoryImpl implements UserRepository {
   constructor (private readonly db: PrismaClient) {
   }
 
-  async create (data: SignupInputDTO, accountPrivacy: AccountPrivacyEnum): Promise<UserDTO> {
-    const accountPrivacyId = await this.getAccountPrivacyId(accountPrivacy)
+  async create (data: SignupInputDTO, accountPrivacyType: AccountPrivacyEnum): Promise<UserDTO> {
+    const accountPrivacy = await this.getAccountPrivacyByType(accountPrivacyType)
+    if (!accountPrivacy) {
+      throw new NotFoundException('Account privacy')
+    }
     const user = await this.db.user.create({
       data: {
         ...data,
-        accountPrivacyId
+        accountPrivacyId: accountPrivacy.id
       }
     })
     return new UserDTO(user)
   }
 
-  async getAccountPrivacyId (accountPrivacy: AccountPrivacyEnum): Promise<string> {
+  private async getAccountPrivacyByType (accountPrivacy: AccountPrivacyEnum): Promise<AccountPrivacyDTO | null> {
     const privacy = await this.db.accountPrivacyType.findFirst({
       where: {
         name: accountPrivacy
       }
     })
-    return privacy ? privacy.id : ''
+    return privacy ? new AccountPrivacyDTO({ id: privacy.id, name: privacy.name as AccountPrivacyEnum }) : null
   }
 
   async getById (userId: any): Promise<UserDTO | null> {
@@ -75,22 +79,26 @@ export class UserRepositoryImpl implements UserRepository {
     return user ? new ExtendedUserDTO(user) : null
   }
 
-  async changeAccountPrivacy (userId: any, accountPrivacy: AccountPrivacyEnum): Promise<void> {
-    const accountPrivacyId = await this.getAccountPrivacyId(accountPrivacy)
+  async changeAccountPrivacy (userId: any, accountPrivacy: AccountPrivacyDTO): Promise<void> {
     await this.db.user.update({
       where: {
         id: userId
       },
       data: {
-        accountPrivacyId
+        accountPrivacyId: accountPrivacy.id
       }
     })
   }
 
-  async getPrivacyType (accountPrivacyId: string): Promise<AccountPrivacyEnum> {
+  async getPrivacy (accountPrivacyId: string): Promise<AccountPrivacyDTO | null> {
     const privacy = await this.db.accountPrivacyType.findUnique({
       where: { id: accountPrivacyId }
     })
-    return privacy ? privacy.name as AccountPrivacyEnum : AccountPrivacyEnum.PUBLIC
+    return privacy ? new AccountPrivacyDTO({ id: privacy.id, name: privacy.name as AccountPrivacyEnum }) : null
+  }
+
+  async getAllAccountPrivacy (): Promise<AccountPrivacyDTO[]> {
+    const privacyTypes = await this.db.accountPrivacyType.findMany()
+    return privacyTypes.map(privacy => new AccountPrivacyDTO({ id: privacy.id, name: privacy.name as AccountPrivacyEnum }))
   }
 }

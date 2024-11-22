@@ -1,14 +1,12 @@
 import { Router } from 'express'
 import { FollowerService } from '@domains/follower/service/follower.service'
-import { FollowerServiceImpl } from '@domains/follower/service/follower.service.impl'
-import { FollowerRepositoryImpl } from '@domains/follower/repository'
-import { db } from '@utils'
 import 'express-async-errors'
 import HttpStatus from 'http-status'
+import { followerService } from '@domains/follower/factory'
 
 export const followerRouter = Router()
 
-const service: FollowerService = new FollowerServiceImpl(new FollowerRepositoryImpl(db))
+const service: FollowerService = followerService
 
 followerRouter.post('/follow/:followedId', async (req, res) => {
   const { userId } = res.locals.context

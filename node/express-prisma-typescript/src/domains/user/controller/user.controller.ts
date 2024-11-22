@@ -3,16 +3,16 @@ import HttpStatus from 'http-status'
 // express-async-errors is a module that handles async errors in express, don't forget import it in your new controllers
 import 'express-async-errors'
 
-import { BodyValidation, db } from '@utils'
+import { BodyValidation } from '@utils'
 
-import { UserRepositoryImpl } from '../repository'
-import { UserService, UserServiceImpl } from '../service'
+import { UserService } from '../service'
 import { AccountPrivacyDTO } from '@domains/user/dto'
+import { userService } from '@domains/user/factory'
 
 export const userRouter = Router()
 
 // Use dependency injection
-const service: UserService = new UserServiceImpl(new UserRepositoryImpl(db))
+const service: UserService = userService
 
 userRouter.get('/', async (req: Request, res: Response) => {
   const { userId } = res.locals.context
@@ -54,4 +54,10 @@ userRouter.post('/:userId/privacy', BodyValidation(AccountPrivacyDTO), async (re
   await service.updatePrivacy(userId, privacy)
 
   return res.status(HttpStatus.OK)
+})
+
+userRouter.get('/privacy/all', async (req: Request, res: Response) => {
+  const privacyTypes = await service.getAllAccountPrivacy()
+
+  return res.status(HttpStatus.OK).json(privacyTypes)
 })

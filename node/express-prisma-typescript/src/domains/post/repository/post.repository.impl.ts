@@ -4,6 +4,8 @@ import { CursorPagination } from '@types'
 
 import { PostRepository } from '.'
 import { CreatePostInputDTO, PostDTO } from '../dto'
+import { ReactionTypeEnum } from '@domains/reaction/type';
+import { ReactionTypeDTO } from '@domains/reaction/dto';
 
 interface VisibilityFilter {
   OR: Array<{
@@ -115,6 +117,38 @@ export class PostRepositoryImpl implements PostRepository {
       }
     })
     return (post != null) ? new PostDTO(post) : null
+  }
+
+  async incrementReaction (postId: string, reactionType: ReactionTypeDTO): Promise<void> {
+    await this.db.postInteractionCount.update({
+      where: {
+        postId_typeId: {
+          postId,
+          typeId: reactionType.id
+        }
+      },
+      data: {
+        count: {
+          increment: 1
+        }
+      }
+    })
+  }
+
+  async decrementReaction (postId: string, reactionType: ReactionTypeDTO): Promise<void> {
+    await this.db.postInteractionCount.update({
+      where: {
+        postId_typeId: {
+          postId,
+          typeId: reactionType.id
+        }
+      },
+      data: {
+        count: {
+          decrement: 1
+        }
+      }
+    })
   }
 
   async getByAuthorId (authorId: string): Promise<PostDTO[]> {

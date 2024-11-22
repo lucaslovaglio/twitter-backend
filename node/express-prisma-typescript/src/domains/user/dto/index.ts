@@ -42,8 +42,10 @@ export class UserViewDTO {
 
 export class AccountPrivacyDTO {
   constructor (accountPrivacy: AccountPrivacyDTO) {
+    this.id = accountPrivacy.id
     this.name = accountPrivacy.name
   }
 
+  id: string
   name: AccountPrivacyEnum
 }
