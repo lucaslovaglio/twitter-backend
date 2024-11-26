@@ -2,12 +2,23 @@ import express from 'express'
 import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
+import { createServer } from 'http'
+import { Server } from 'socket.io'
 
 import { Constants, NodeEnv, Logger } from '@utils'
 import { router } from '@router'
 import { ErrorHandling } from '@utils/errors'
 import { swaggerSpec, swaggerUi } from '@swagger'
+import { SocketService } from '@domains/socket/service/socket.service';
+import { SocketServiceImpl } from '@domains/socket/service/socket.service.impl';
+
 const app = express()
+const httpServer = createServer(app)
+const io = new Server(httpServer, {
+  cors: {
+    origin: Constants.CORS_WHITELIST
+  }
+})
 
 // Set up request logger
 if (Constants.NODE_ENV === NodeEnv.DEV) {
@@ -31,6 +42,11 @@ app.use('/api', router)
 
 app.use(ErrorHandling)
 
-app.listen(Constants.PORT, () => {
+// Initialize socket service
+const socketService: SocketService = new SocketServiceImpl(io)
+socketService.initialize()
+
+// Start the server
+httpServer.listen(Constants.PORT, () => {
   Logger.info(`Server listening on port ${Constants.PORT}`)
 })

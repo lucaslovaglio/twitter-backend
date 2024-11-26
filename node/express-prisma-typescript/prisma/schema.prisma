@@ -35,6 +35,8 @@ model User {
   accountPrivacy   AccountPrivacyType @relation(fields: [accountPrivacyId], references: [id])
   accountPrivacyId String             @db.Uuid
   reactions        PostReaction[]
+  sentMessages     ChatHistory[]      @relation(name: "Sender")
+  receivedMessages ChatHistory[]      @relation(name: "Receiver")
 }
 
 model AccountPrivacyType {
@@ -75,6 +77,25 @@ model Post {
 
   PostInteractionCount PostInteractionCount[]
   PostReaction         PostReaction[]
+
+  ParentComments Comment[] @relation("PostAsParent") // Posts that are comments of this post
+  ChildComments  Comment?  @relation("PostAsChild") // Posts that are parent of this post
+}
+
+model Comment {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid // Primary Key
+
+  parentPostId String @db.Uuid // Foreign Key
+  childPostId  String @unique @db.Uuid // Foreign Key
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Optional value
+
+  parentPost Post @relation("PostAsParent", fields: [parentPostId], references: [id], onDelete: Cascade) // Post wich has as comment the child post
+  childPost  Post @relation("PostAsChild", fields: [childPostId], references: [id], onDelete: Cascade) // Post wich acts as a comment of another post
+
+  @@unique([parentPostId, childPostId])
 }
 
 model PostInteractionCount {
@@ -118,4 +139,33 @@ model PostReaction {
   type PostReactionType @relation(fields: [typeId], references: [id], onDelete: Cascade) // One to many
 
   @@unique([userId, postId, typeId])
+}
+
+model ChatHistory {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid // Primary Key
+
+  senderId   String @db.Uuid // Foreign Key
+  receiverId String @db.Uuid // Foreign Key
+  roomId     String @db.Uuid // Foreign Key
+  content    String
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Optional value
+
+  sender   User     @relation(name: "Sender", fields: [senderId], references: [id], onDelete: Cascade) // One to many
+  receiver User     @relation(name: "Receiver", fields: [receiverId], references: [id], onDelete: Cascade) // One to many
+  room     ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade) // One to many
+}
+
+model ChatRoom {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid // Primary Key
+
+  name String @unique // Unique constraint
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Optional value
+
+  chatHistory ChatHistory[]
 }
