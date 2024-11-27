@@ -1,8 +1,10 @@
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt'
 import { Request, Response } from 'express'
-import { Constants } from '@utils'
+import { Constants, Logger } from '@utils'
 import { UnauthorizedException } from '@utils/errors'
+import { Socket } from 'socket.io'
+import { SocketEvents } from '@domains/socket/constants';
 
 export const generateAccessToken = (payload: Record<string, string | boolean | number>): string => {
   // Do not use this in production, the token will last 24 hours
@@ -31,4 +33,25 @@ export const encryptPassword = async (password: string): Promise<string> => {
 
 export const checkPassword = async (password: string, hash: string): Promise<boolean> => {
   return await bcrypt.compare(password, hash)
+}
+
+export const authenticateSocket = (socket: Socket, next: (err?: Error) => void): void => {
+  try {
+    // Get the token from the authorization header
+    const [bearer, token] = (socket.handshake.headers.authorization)?.split(' ') ?? []
+
+    // Verify that the Authorization header has the expected shape
+    if (!bearer || !token || bearer !== 'Bearer') throw new UnauthorizedException('MISSING_TOKEN')
+
+    jwt.verify(token, Constants.TOKEN_SECRET, (err, context) => {
+      if (err) throw new UnauthorizedException('INVALID_TOKEN')
+      socket.data.user = context
+      Logger.info(`User ${socket.data.user} connected to the socket`)
+      next()
+    })
+  } catch (err) {
+    const error = err instanceof Error ? err : new UnauthorizedException('AUTHENTICATION_ERROR')
+    Logger.error(error)
+    next(error)
+  }
 }

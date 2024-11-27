@@ -2,44 +2,53 @@ import { Server, Socket } from 'socket.io'
 import { Logger } from '@utils'
 import { SocketEvents, SocketMessages } from '../constants'
 import { SocketService } from '@domains/socket/service/socket.service'
+import { ChatService } from '@domains/chat/service'
+import { UserService } from '@domains/user/service'
 
 export class SocketServiceImpl implements SocketService {
-  private readonly io: Server
-
-  constructor (io: Server) {
-    this.io = io
-  }
+  constructor (
+    private readonly io: Server,
+    private readonly chatService: ChatService,
+    private readonly userService: UserService
+  ) {}
 
   initialize (): void {
-    this.io.on(SocketEvents.CONNECTION, (socket) => { this.onConnection(socket) })
+    this.io.on(SocketEvents.CONNECTION, async (socket) => {
+      await this.onConnection(socket)
+    })
   }
 
-  onConnection (socket: Socket): void {
+  async onConnection (socket: Socket): Promise<void> {
     this.connect(socket)
-
-    socket.on(SocketEvents.SET_NICKNAME, (nickname: string) => {
-      this.setNickname(socket, nickname)
-    })
+    await this.joinAll(socket)
+    await this.setNickname(socket)
 
     socket.on(SocketEvents.JOIN_ROOM, (roomName: string) => {
       this.join(socket, roomName)
     })
 
-    socket.on(SocketEvents.MESSAGE, (roomName: string, message: string) => {
-      this.receiveMessage(socket, roomName, message)
+    socket.on(SocketEvents.MESSAGE, async (roomName: string, message: string) => {
+      await this.receiveMessage(socket, roomName, message)
     })
 
     socket.on(SocketEvents.WRITING, (roomName: string) => {
       this.isWriting(socket, roomName)
     })
 
-    socket.on(SocketEvents.LEAVE_ROOM, (roomName: string) => {
-      this.leaveRoom(socket, roomName)
+    socket.on(SocketEvents.LEAVE_ROOM, async (roomName: string) => {
+      await this.leaveRoom(socket, roomName)
     })
 
     socket.on(SocketEvents.DISCONNECT, () => {
       this.disconnect(socket)
     })
+  }
+
+  private async joinAll (socket: Socket): Promise<void> {
+    const rooms = await this.chatService.getUserRooms(socket.data.user.userId)
+    for (const room of rooms) {
+      this.join(socket, room.id)
+    }
   }
 
   private connect (socket: Socket): void {
@@ -51,9 +60,9 @@ export class SocketServiceImpl implements SocketService {
     Logger.info(`${SocketMessages.CLIENT_DISCONNECTED}: ${socket.id}`)
   }
 
-  private leaveRoom (socket: Socket, roomName: string): void {
+  private async leaveRoom (socket: Socket, roomName: string): Promise<void> {
     Logger.info(`${socket.id} left room: ${roomName}`)
-    void socket.leave(roomName)
+    await socket.leave(roomName)
   }
 
   private isWriting (socket: Socket, roomName: string): void {
@@ -62,15 +71,20 @@ export class SocketServiceImpl implements SocketService {
     Logger.info(`${nickname} ${nickname} ${SocketMessages.IS_WRITING}`)
   }
 
-  private receiveMessage (socket: Socket, roomName: string, message: string): void {
+  private async receiveMessage (socket: Socket, roomName: string, message: string): Promise<void> {
     const nickname: string = socket.data.nickname !== undefined ? socket.data.nickname : socket.id
+    const userId: string = socket.data.user.userId !== undefined ? socket.data.user.userId : ''
     this.io.to(roomName).emit(SocketEvents.REPLY, `${nickname}: ${message}`)
     Logger.info(`${SocketMessages.RECEIVED_MESSAGE}: ${message}`)
+    Logger.info(`${userId}`)
+    await this.chatService.sendMessage(userId, roomName, message)
   }
 
-  private setNickname (socket: Socket, nickname: string): void {
-    socket.data.nickname = nickname
-    Logger.info(`${socket.id} set their nickname to ${nickname}`)
+  private async setNickname (socket: Socket): Promise<void> {
+    const user = await this.userService.getUser(socket.data.user.userId)
+    const name = user.name ? user.name : user.id
+    socket.data.nickname = name
+    Logger.info(`${socket.id} set their nickname to ${name}`)
   }
 
   private join (socket: Socket, roomName: string): void {

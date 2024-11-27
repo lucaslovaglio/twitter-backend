@@ -5,12 +5,12 @@ import cors from 'cors'
 import { createServer } from 'http'
 import { Server } from 'socket.io'
 
-import { Constants, NodeEnv, Logger } from '@utils'
+import { Constants, NodeEnv, Logger, authenticateSocket } from '@utils'
 import { router } from '@router'
 import { ErrorHandling } from '@utils/errors'
 import { swaggerSpec, swaggerUi } from '@swagger'
-import { SocketService } from '@domains/socket/service/socket.service';
-import { SocketServiceImpl } from '@domains/socket/service/socket.service.impl';
+import { SocketService } from '@domains/socket/service/socket.service'
+import { socketService } from '@domains/socket/factory'
 
 const app = express()
 const httpServer = createServer(app)
@@ -42,9 +42,11 @@ app.use('/api', router)
 
 app.use(ErrorHandling)
 
+io.use(authenticateSocket)
+
 // Initialize socket service
-const socketService: SocketService = new SocketServiceImpl(io)
-socketService.initialize()
+const socket: SocketService = socketService(io)
+socket.initialize()
 
 // Start the server
 httpServer.listen(Constants.PORT, () => {

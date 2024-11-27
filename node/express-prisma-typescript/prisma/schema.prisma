@@ -35,8 +35,9 @@ model User {
   accountPrivacy   AccountPrivacyType @relation(fields: [accountPrivacyId], references: [id])
   accountPrivacyId String             @db.Uuid
   reactions        PostReaction[]
-  sentMessages     ChatHistory[]      @relation(name: "Sender")
-  receivedMessages ChatHistory[]      @relation(name: "Receiver")
+  rooms            UserRoom[]
+  myRooms          Room[]
+  messages         Messages[]
 }
 
 model AccountPrivacyType {
@@ -141,31 +142,49 @@ model PostReaction {
   @@unique([userId, postId, typeId])
 }
 
-model ChatHistory {
-  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid // Primary Key
-
-  senderId   String @db.Uuid // Foreign Key
-  receiverId String @db.Uuid // Foreign Key
-  roomId     String @db.Uuid // Foreign Key
-  content    String
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime? // Optional value
-
-  sender   User     @relation(name: "Sender", fields: [senderId], references: [id], onDelete: Cascade) // One to many
-  receiver User     @relation(name: "Receiver", fields: [receiverId], references: [id], onDelete: Cascade) // One to many
-  room     ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade) // One to many
-}
-
-model ChatRoom {
+model Room {
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid // Primary Key
 
   name String @unique // Unique constraint
 
+  ownerId String @db.Uuid // Foreign Key
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime? // Optional value
 
-  chatHistory ChatHistory[]
+  owner        User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  messages     Messages[]
+  participants UserRoom[]
+}
+
+model UserRoom {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid // Primary Key
+
+  userId String @db.Uuid // Foreign Key
+  roomId String @db.Uuid // Foreign Key
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Optional value
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roomId])
+}
+
+model Messages {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid // Primary Key
+
+  senderId String @db.Uuid // Foreign Key
+  roomId   String @db.Uuid // Foreign Key
+  content  String
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Optional value
+
+  sender User @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  room   Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
 }
