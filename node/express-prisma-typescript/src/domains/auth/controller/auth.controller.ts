@@ -30,3 +30,4 @@ authRouter.post('/login', BodyValidation(LoginInputDTO), async (req: Request, re
   return res.status(HttpStatus.OK).json(token)
 })
 
+
