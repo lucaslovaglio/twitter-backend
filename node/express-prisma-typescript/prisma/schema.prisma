@@ -25,19 +25,24 @@ model User {
   email    String  @unique // Unique constraint
   password String
 
+  accountPrivacyId String @db.Uuid
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime? // Optional value
 
-  posts            Post[]
-  follows          Follow[]           @relation(name: "follows")
-  followers        Follow[]           @relation(name: "followers")
-  accountPrivacy   AccountPrivacyType @relation(fields: [accountPrivacyId], references: [id])
-  accountPrivacyId String             @db.Uuid
-  reactions        PostReaction[]
-  rooms            UserRoom[]
-  myRooms          Room[]
-  messages         Messages[]
+  accountPrivacy AccountPrivacyType @relation(fields: [accountPrivacyId], references: [id])
+  posts          Post[]
+  reactions      PostReaction[]
+
+  follows   Follow[] @relation(name: "follows")
+  followers Follow[] @relation(name: "followers")
+
+  rooms    UserRoom[]
+  myRooms  Room[] // Rooms that the user owns
+  messages Messages[]
+
+  files File[]
 }
 
 model AccountPrivacyType {
@@ -187,4 +192,18 @@ model Messages {
 
   sender User @relation(fields: [senderId], references: [id], onDelete: Cascade)
   room   Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+}
+
+model File {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid // Primary Key
+
+  name        String
+  path        String @unique
+  createdById String @db.Uuid // Foreign Key
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Optional value
+
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Cascade)
 }

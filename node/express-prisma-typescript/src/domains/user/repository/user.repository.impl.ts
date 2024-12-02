@@ -1,7 +1,7 @@
 import { SignupInputDTO } from '@domains/auth/dto'
 import { PrismaClient } from '@prisma/client'
 import { OffsetPagination } from '@types'
-import { AccountPrivacyDTO, ExtendedUserDTO, UserDTO } from '../dto'
+import { AccountPrivacyDTO, ExtendedUserDTO, UserDTO, UserViewDTO } from '../dto'
 import { UserRepository } from './user.repository'
 import { AccountPrivacyEnum } from '@domains/user/type'
 import { NotFoundException } from '@utils'
@@ -40,6 +40,16 @@ export class UserRepositoryImpl implements UserRepository {
       }
     })
     return user ? new UserDTO(user) : null
+  }
+
+  async getViewById (userId: any): Promise<UserViewDTO | null> {
+    const user = await this.db.user.findUnique({
+      where: {
+        id: userId
+      }
+    })
+
+    return user ? new UserViewDTO({ ...user, profilePicture: null }) : null
   }
 
   async delete (userId: any): Promise<void> {

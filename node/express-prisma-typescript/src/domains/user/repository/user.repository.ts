@@ -1,6 +1,6 @@
 import { SignupInputDTO } from '@domains/auth/dto'
 import { OffsetPagination } from '@types'
-import { AccountPrivacyDTO, ExtendedUserDTO, UserDTO } from '../dto'
+import { AccountPrivacyDTO, ExtendedUserDTO, UserDTO, UserViewDTO } from '../dto'
 import { AccountPrivacyEnum } from '@domains/user/type'
 
 export interface UserRepository {
@@ -8,6 +8,7 @@ export interface UserRepository {
   delete: (userId: string) => Promise<void>
   getRecommendedUsersPaginated: (options: OffsetPagination) => Promise<UserDTO[]>
   getById: (userId: string) => Promise<UserDTO | null>
+  getViewById: (userId: string) => Promise<UserViewDTO | null>
   getByEmailOrUsername: (email?: string, username?: string) => Promise<ExtendedUserDTO | null>
   changeAccountPrivacy: (userId: string, accountPrivacy: AccountPrivacyDTO) => Promise<void>
   getPrivacy: (accountPrivacyId: string) => Promise<AccountPrivacyDTO | null>

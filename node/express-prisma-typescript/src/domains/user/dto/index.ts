@@ -1,4 +1,4 @@
-import { AccountPrivacyEnum } from '@domains/user/type';
+import { AccountPrivacyEnum } from '@domains/user/type'
 
 export class UserDTO {
   constructor (user: UserDTO) {
@@ -35,7 +35,7 @@ export class UserViewDTO {
   }
 
   id: string
-  name: string
+  name: string | null
   username: string
   profilePicture: string | null
 }

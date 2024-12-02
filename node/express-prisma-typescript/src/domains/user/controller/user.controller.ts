@@ -8,6 +8,7 @@ import { BodyValidation } from '@utils'
 import { UserService } from '../service'
 import { AccountPrivacyDTO } from '@domains/user/dto'
 import { userService } from '@domains/user/factory'
+import { followerService } from '@domains/follower/factory';
 
 export const userRouter = Router()
 
@@ -32,11 +33,13 @@ userRouter.get('/me', async (req: Request, res: Response) => {
 })
 
 userRouter.get('/:userId', async (req: Request, res: Response) => {
+  const { userId } = res.locals.context
   const { userId: otherUserId } = req.params
 
   const user = await service.getUser(otherUserId)
+  const isFollowing = await followerService.isFollowing(userId, otherUserId)
 
-  return res.status(HttpStatus.OK).json(user)
+  return res.status(HttpStatus.OK).json({ user, isFollowing })
 })
 
 userRouter.delete('/', async (req: Request, res: Response) => {
@@ -60,4 +63,20 @@ userRouter.get('/privacy/all', async (req: Request, res: Response) => {
   const privacyTypes = await service.getAllAccountPrivacy()
 
   return res.status(HttpStatus.OK).json(privacyTypes)
+})
+
+userRouter.post('/profilePicture', async (req: Request, res: Response) => {
+  const { userId } = res.locals.context
+
+  const file = await service.uploadProfilePicture(userId)
+
+  return res.status(HttpStatus.OK).json(file)
+})
+
+userRouter.get('/profilePicture', async (req: Request, res: Response) => {
+  const { userId } = res.locals.context
+
+  const file = await service.getProfilePicture(userId)
+
+  return res.status(HttpStatus.OK).json(file)
 })
