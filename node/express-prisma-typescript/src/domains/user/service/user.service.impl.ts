@@ -17,8 +17,9 @@ export class UserServiceImpl implements UserService {
   async getUser (userId: any): Promise<UserViewDTO> {
     const user = await this.repository.getViewById(userId)
     if (!user) throw new NotFoundException('user')
-    const profilePicture: ExtendedFileDTO = await this.getProfilePicture(userId)
-    const url = profilePicture.url
+    const profilePicture: ExtendedFileDTO | null = await this.getProfilePicture(userId)
+      .catch(() => null)
+    const url = profilePicture?.url
     return new UserViewDTO({ ...user, profilePicture: url })
   }
 
