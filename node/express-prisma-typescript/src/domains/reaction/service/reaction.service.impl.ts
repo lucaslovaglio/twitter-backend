@@ -1,11 +1,11 @@
 import { ReactionService } from '@domains/reaction/service/reaction.service'
 import { ReactionRepository } from '@domains/reaction/repository'
 import { CreateReactionInputDTO, ExtendedReactionDTO, ReactionDTO, ReactionTypeDTO } from '@domains/reaction/dto'
-import { ForbiddenException, Logger, NotFoundException } from '@utils'
+import { ForbiddenException, NotFoundException } from '@utils'
 import { PostService } from '@domains/post/service'
 import { validate } from 'class-validator'
 import { ReactionTypeEnum } from '@domains/reaction/type'
-import { CursorPagination } from '@types';
+import { CursorPagination } from '@types'
 
 export class ReactionServiceImpl implements ReactionService {
   constructor (

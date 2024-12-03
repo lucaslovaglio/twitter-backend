@@ -1,7 +1,7 @@
 import { FollowerService } from './follower.service'
 import { FollowerRepository } from '../repository'
 import { FollowDTO } from '@domains/follower/dto'
-import { ConflictException } from '@utils';
+import { ConflictException } from '@utils'
 
 export class FollowerServiceImpl implements FollowerService {
   constructor (private readonly repository: FollowerRepository) {}

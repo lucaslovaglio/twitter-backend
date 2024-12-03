@@ -3,7 +3,7 @@ import { CreateReactionInputDTO, ExtendedReactionDTO, ReactionDTO, ReactionTypeD
 import { PostInteractionCount, PrismaClient } from '@prisma/client'
 import { ReactionTypeEnum } from '@domains/reaction/type'
 import { NotFoundException } from '@utils'
-import { CursorPagination } from '@types';
+import { CursorPagination } from '@types'
 
 export class ReactionRepositoryImpl implements ReactionRepository {
   constructor (private readonly db: PrismaClient) {}

@@ -9,13 +9,15 @@ import swaggerUi from 'swagger-ui-express'
 import userDocs from '@domains/user/controller/user.swagger'
 import healthDocs from '@domains/health/controller/health.swagger'
 import { postDocs } from '@domains/post/controller/post.swagger'
+import chatDocs from '@domains/chat/controller/chat.swagger'
 
 const paths = {
   ...healthDocs,
   ...authDocs,
   ...followerDocs,
   ...userDocs,
-  ...postDocs
+  ...postDocs,
+  ...chatDocs
 }
 
 export const swaggerOptions = {
