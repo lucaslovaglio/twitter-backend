@@ -1,4 +1,5 @@
 import { AccountPrivacyEnum } from '@domains/user/type'
+import { IsEnum, IsString } from 'class-validator';
 
 export class UserDTO {
   constructor (user: UserDTO) {
@@ -48,4 +49,12 @@ export class AccountPrivacyDTO {
 
   id: string
   name: AccountPrivacyEnum
+}
+
+export class UpdatePrivacy {
+  @IsString()
+    id!: string
+
+  @IsEnum(AccountPrivacyEnum)
+    name!: AccountPrivacyEnum
 }

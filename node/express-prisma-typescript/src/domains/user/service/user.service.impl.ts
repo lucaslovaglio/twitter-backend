@@ -7,6 +7,7 @@ import { AccountPrivacyEnum } from '@domains/user/type'
 import { MediaService } from '@domains/media/service'
 import { ExtendedFileDTO } from '@domains/media/dto'
 import { MediaModel } from '@domains/media/type'
+import { Logger } from '@utils';
 
 export class UserServiceImpl implements UserService {
   constructor (
@@ -32,7 +33,9 @@ export class UserServiceImpl implements UserService {
   }
 
   async updatePrivacy (userId: any, privacy: AccountPrivacyDTO): Promise<void> {
-    await this.repository.changeAccountPrivacy(userId, privacy)
+    const privacyType = await this.repository.getPrivacy(privacy.id)
+    if (!privacyType) throw new NotFoundException('privacy')
+    await this.repository.changeAccountPrivacy(userId, privacyType)
   }
 
   async isPrivate (userId: string): Promise<boolean> {
@@ -58,8 +61,9 @@ export class UserServiceImpl implements UserService {
     const users = await this.repository.getUsersByUsername(username, options)
     return await Promise.all(
       users.map(async user => {
-        const profilePicture: ExtendedFileDTO = await this.getProfilePicture(user.id)
-        const url = profilePicture.url
+        const profilePicture: ExtendedFileDTO | null = await this.getProfilePicture(user.id)
+          .catch(() => null)
+        const url = profilePicture?.url
         return new UserViewDTO({ ...user, profilePicture: url })
       })
     )

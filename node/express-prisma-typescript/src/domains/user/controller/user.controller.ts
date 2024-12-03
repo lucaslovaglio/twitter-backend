@@ -3,10 +3,10 @@ import HttpStatus from 'http-status'
 // express-async-errors is a module that handles async errors in express, don't forget import it in your new controllers
 import 'express-async-errors'
 
-import { BodyValidation } from '@utils'
+import { BodyValidation, Logger } from '@utils';
 
 import { UserService } from '../service'
-import { AccountPrivacyDTO } from '@domains/user/dto'
+import { AccountPrivacyDTO, UpdatePrivacy } from '@domains/user/dto';
 import { userService } from '@domains/user/factory'
 import { followerService } from '@domains/follower/factory'
 
@@ -50,11 +50,11 @@ userRouter.delete('/', async (req: Request, res: Response) => {
   return res.status(HttpStatus.OK)
 })
 
-userRouter.post('/:userId/privacy', BodyValidation(AccountPrivacyDTO), async (req: Request, res: Response) => {
+userRouter.post('/:userId/privacy', BodyValidation(UpdatePrivacy), async (req: Request, res: Response) => {
   const { userId } = req.params
   const { privacy } = req.body
-
-  await service.updatePrivacy(userId, privacy)
+  Logger.info(`Updating privacy for user ${userId}`)
+  await service.updatePrivacy(userId, new AccountPrivacyDTO({ ...privacy }))
 
   return res.status(HttpStatus.OK)
 })
