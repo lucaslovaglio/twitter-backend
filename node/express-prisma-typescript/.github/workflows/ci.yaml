@@ -20,5 +20,8 @@ jobs:
         with:
           node-version: 18
       - run: yarn install
+        working-directory: ./node/express-prisma-typescript
       - run: yarn build
+        working-directory: ./node/express-prisma-typescript
       - run: yarn test
+        working-directory: ./node/express-prisma-typescript
