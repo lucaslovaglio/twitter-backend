@@ -8,7 +8,7 @@ import { healthRouter } from '@domains/health'
 import { followerRouter } from '@domains/follower'
 import { reactionRouter } from '@domains/reaction'
 import { commentRouter } from '@domains/comment/controller'
-import { chatRouter } from '@domains/chat/controller';
+import { chatRouter } from '@domains/chat/controller'
 
 export const router = Router()
 
