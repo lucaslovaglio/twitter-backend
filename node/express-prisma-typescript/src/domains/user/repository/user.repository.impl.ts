@@ -49,7 +49,7 @@ export class UserRepositoryImpl implements UserRepository {
       }
     })
 
-    return user ? new UserViewDTO({ ...user, profilePicture: null }) : null
+    return user ? new UserViewDTO(user) : null
   }
 
   async delete (userId: any): Promise<void> {
@@ -110,5 +110,24 @@ export class UserRepositoryImpl implements UserRepository {
   async getAllAccountPrivacy (): Promise<AccountPrivacyDTO[]> {
     const privacyTypes = await this.db.accountPrivacyType.findMany()
     return privacyTypes.map(privacy => new AccountPrivacyDTO({ id: privacy.id, name: privacy.name as AccountPrivacyEnum }))
+  }
+
+  async getUsersByUsername (username: string, options: OffsetPagination): Promise<UserViewDTO[]> {
+    const users = await this.db.user.findMany({
+      where: {
+        username: {
+          contains: username,
+          mode: 'insensitive' // no sensitive to capital letters
+        }
+      },
+      take: options.limit ? options.limit : undefined,
+      skip: options.skip ? options.skip : undefined,
+      orderBy: [
+        {
+          id: 'asc'
+        }
+      ]
+    })
+    return users.map(user => new UserViewDTO(user))
   }
 }

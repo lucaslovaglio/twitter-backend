@@ -11,4 +11,5 @@ export interface UserService {
   getAllAccountPrivacy: () => Promise<AccountPrivacyDTO[]>
   uploadProfilePicture: (userId: string) => Promise<ExtendedFileDTO>
   getProfilePicture: (userId: string) => Promise<ExtendedFileDTO>
+  getUsersByUsername: (username: string, options: OffsetPagination) => Promise<UserViewDTO[]>
 }

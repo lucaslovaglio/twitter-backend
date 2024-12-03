@@ -1,13 +1,12 @@
-import { CreatePostInputDTO, PostDTO } from '../dto'
+import { CreatePostInputDTO, ExtendedPostDTO, PostDTO } from '../dto'
 import { PostRepository } from '../repository'
 import { PostService } from '.'
 import { validate } from 'class-validator'
-import { ForbiddenException, NotFoundException } from '@utils'
+import { ForbiddenException, Logger, NotFoundException } from '@utils'
 import { CursorPagination } from '@types'
 import { FollowerService } from '@domains/follower/service/follower.service'
 import { UserService } from '@domains/user/service'
-import { ReactionTypeEnum } from '@domains/reaction/type'
-import { ReactionTypeDTO } from '@domains/reaction/dto';
+import { ReactionTypeDTO } from '@domains/reaction/dto'
 
 export class PostServiceImpl implements PostService {
   constructor (
@@ -33,16 +32,16 @@ export class PostServiceImpl implements PostService {
     if (!post) {
       throw new NotFoundException('post')
     }
-    await this.checkPostAccess(userId, post.authorId)
+    await this.checkPostAccess(userId, post.id)
     return post
   }
 
-  async getLatestPosts (userId: string, options: CursorPagination): Promise<PostDTO[]> {
+  async getLatestPosts (userId: string, options: CursorPagination): Promise<ExtendedPostDTO[]> {
     return await this.repository.getAllByDatePaginated(userId, options)
   }
 
   async getPostsByAuthor (userId: any, authorId: string): Promise<PostDTO[]> {
-    await this.checkPostAccess(userId, authorId)
+    await this.canViewPost(userId, authorId)
     return await this.repository.getByAuthorId(authorId)
   }
 
@@ -51,7 +50,13 @@ export class PostServiceImpl implements PostService {
   }
 
   async checkPostAccess (userId: string, postId: string): Promise<void> {
-    if (!await this.canViewPost(userId, postId)) {
+    const post = await this.repository.getById(postId)
+    if (!post) {
+      throw new NotFoundException('post')
+    }
+    Logger.info('Checking post access')
+    if (!await this.canViewPost(userId, post.authorId)) {
+      Logger.info('ohh ohhhh!')
       throw new NotFoundException('post')
     }
   }
@@ -70,5 +75,9 @@ export class PostServiceImpl implements PostService {
 
   private async isFollowing (userId: string, authorId: string): Promise<boolean> {
     return await this.followerService.isFollowing(userId, authorId)
+  }
+
+  async getPostReactions (postId: string, reactionType: ReactionTypeDTO): Promise<number> {
+    return await this.repository.getPostReactions(postId, reactionType)
   }
 }

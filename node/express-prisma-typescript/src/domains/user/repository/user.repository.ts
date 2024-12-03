@@ -13,4 +13,5 @@ export interface UserRepository {
   changeAccountPrivacy: (userId: string, accountPrivacy: AccountPrivacyDTO) => Promise<void>
   getPrivacy: (accountPrivacyId: string) => Promise<AccountPrivacyDTO | null>
   getAllAccountPrivacy: () => Promise<AccountPrivacyDTO[]>
+  getUsersByUsername: (username: string, options: OffsetPagination) => Promise<UserViewDTO[]>
 }

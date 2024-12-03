@@ -8,7 +8,7 @@ import { BodyValidation } from '@utils'
 import { UserService } from '../service'
 import { AccountPrivacyDTO } from '@domains/user/dto'
 import { userService } from '@domains/user/factory'
-import { followerService } from '@domains/follower/factory';
+import { followerService } from '@domains/follower/factory'
 
 export const userRouter = Router()
 
@@ -79,4 +79,13 @@ userRouter.get('/profilePicture', async (req: Request, res: Response) => {
   const file = await service.getProfilePicture(userId)
 
   return res.status(HttpStatus.OK).json(file)
+})
+
+userRouter.get('/by_username/:username', async (req: Request, res: Response) => {
+  const { username } = req.params
+  const { limit, skip } = req.query as Record<string, string>
+
+  const users = await service.getUsersByUsername(username, { limit: Number(limit), skip: Number(skip) })
+
+  return res.status(HttpStatus.OK).json(users)
 })

@@ -37,7 +37,7 @@ export class UserViewDTO {
   id: string
   name: string | null
   username: string
-  profilePicture: string | null
+  profilePicture?: string
 }
 
 export class AccountPrivacyDTO {

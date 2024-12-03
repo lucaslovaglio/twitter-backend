@@ -3,9 +3,9 @@ import { PrismaClient } from '@prisma/client'
 import { CursorPagination } from '@types'
 
 import { PostRepository } from '.'
-import { CreatePostInputDTO, PostDTO } from '../dto'
-import { ReactionTypeEnum } from '@domains/reaction/type';
-import { ReactionTypeDTO } from '@domains/reaction/dto';
+import { CreatePostInputDTO, ExtendedPostDTO, PostDTO } from '../dto'
+import { ReactionTypeDTO } from '@domains/reaction/dto'
+import { ReactionTypeEnum } from '@domains/reaction/type'
 
 interface VisibilityFilter {
   OR: Array<{
@@ -47,7 +47,7 @@ export class PostRepositoryImpl implements PostRepository {
   async getAllByDatePaginated (
     userId: string,
     options: CursorPagination
-  ): Promise<PostDTO[]> {
+  ): Promise<ExtendedPostDTO[]> {
     const visibilityFilter = this.getVisibilityFilter(userId)
 
     const paginationOptions = this.getPaginationOptions(options)
@@ -64,11 +64,33 @@ export class PostRepositoryImpl implements PostRepository {
         }
       ],
       include: {
-        author: true
+        author: true,
+        PostInteractionCount: {
+          include: {
+            type: true
+          }
+        }
       }
     })
 
-    return posts.map((post) => new PostDTO(post))
+    return posts.map((posts) => {
+      const interactions = posts.PostInteractionCount
+      const qtyComments =
+        interactions.find((i) => i.type.name === ReactionTypeEnum.COMMENT)?.count ?? 0
+      const qtyLikes =
+        interactions.find((i) => i.type.name === ReactionTypeEnum.LIKE)?.count ?? 0
+      const qtyRetweets =
+        interactions.find((i) => i.type.name === ReactionTypeEnum.RETWEET)?.count ?? 0
+
+      return new ExtendedPostDTO(
+        {
+          ...posts,
+          qtyComments,
+          qtyLikes,
+          qtyRetweets
+        }
+      )
+    })
   }
 
   private getVisibilityFilter (userId: string): VisibilityFilter {
@@ -120,22 +142,38 @@ export class PostRepositoryImpl implements PostRepository {
   }
 
   async incrementReaction (postId: string, reactionType: ReactionTypeDTO): Promise<void> {
-    await this.db.postInteractionCount.update({
+    await this.db.postInteractionCount.upsert({
       where: {
         postId_typeId: {
           postId,
           typeId: reactionType.id
         }
       },
-      data: {
+      update: {
         count: {
           increment: 1
         }
+      },
+      create: {
+        postId,
+        typeId: reactionType.id,
+        count: 1
       }
     })
   }
 
   async decrementReaction (postId: string, reactionType: ReactionTypeDTO): Promise<void> {
+    const currentInteraction = await this.db.postInteractionCount.findUnique({
+      where: {
+        postId_typeId: {
+          postId,
+          typeId: reactionType.id
+        }
+      }
+    })
+
+    if (!currentInteraction || currentInteraction.count === 0) return
+
     await this.db.postInteractionCount.update({
       where: {
         postId_typeId: {
@@ -158,5 +196,17 @@ export class PostRepositoryImpl implements PostRepository {
       }
     })
     return posts.map(post => new PostDTO(post))
+  }
+
+  async getPostReactions (postId: string, reactionType: ReactionTypeDTO): Promise<number> {
+    const interaction = await this.db.postInteractionCount.findUnique({
+      where: {
+        postId_typeId: {
+          postId,
+          typeId: reactionType.id
+        }
+      }
+    })
+    return interaction?.count ?? 0
   }
 }

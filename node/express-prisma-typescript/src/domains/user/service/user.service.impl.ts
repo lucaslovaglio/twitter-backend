@@ -52,4 +52,15 @@ export class UserServiceImpl implements UserService {
   async getProfilePicture (userId: string): Promise<ExtendedFileDTO> {
     return await this.mediaService.getMedia(userId, MediaModel.PROFILE_PICTURE, userId)
   }
+
+  async getUsersByUsername (username: string, options: OffsetPagination): Promise<UserViewDTO[]> {
+    const users = await this.repository.getUsersByUsername(username, options)
+    return await Promise.all(
+      users.map(async user => {
+        const profilePicture: ExtendedFileDTO = await this.getProfilePicture(user.id)
+        const url = profilePicture.url
+        return new UserViewDTO({ ...user, profilePicture: url })
+      })
+    )
+  }
 }
