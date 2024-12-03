@@ -34,6 +34,8 @@ jobs:
         id: docker_build
         uses: docker/build-push-action@v4
         with:
+          context: ./node/express-prisma-typescript
+          file: ./node/express-prisma-typescript/Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
