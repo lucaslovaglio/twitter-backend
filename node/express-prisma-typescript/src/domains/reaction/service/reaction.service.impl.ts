@@ -5,6 +5,7 @@ import { ForbiddenException, Logger, NotFoundException } from '@utils'
 import { PostService } from '@domains/post/service'
 import { validate } from 'class-validator'
 import { ReactionTypeEnum } from '@domains/reaction/type'
+import { CursorPagination } from '@types';
 
 export class ReactionServiceImpl implements ReactionService {
   constructor (
@@ -30,11 +31,11 @@ export class ReactionServiceImpl implements ReactionService {
     await this.repository.delete(reaction.id)
   }
 
-  async getReactionsByPostId (userId: string, postId: string, reactionTypeId: string): Promise<ExtendedReactionDTO[]> {
+  async getReactionsByPostId (userId: string, postId: string, reactionTypeId: string, options: CursorPagination): Promise<ExtendedReactionDTO[]> {
     await this.postService.checkPostAccess(userId, postId)
     const reactionType: ReactionTypeDTO | null = await this.repository.getReactionTypeById(reactionTypeId)
     if (!reactionType) throw new NotFoundException('reaction type')
-    return await this.repository.getReactionsByPostId(postId, reactionType)
+    return await this.repository.getReactionsByPostId(postId, reactionType, options)
   }
 
   async getAllReactionTypes (): Promise<ReactionTypeDTO[]> {

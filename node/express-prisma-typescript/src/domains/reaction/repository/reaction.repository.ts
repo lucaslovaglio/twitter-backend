@@ -1,5 +1,6 @@
 import { CreateReactionInputDTO, ExtendedReactionDTO, ReactionDTO, ReactionTypeDTO } from '@domains/reaction/dto'
 import { ReactionTypeEnum } from '@domains/reaction/type'
+import { CursorPagination } from '@types';
 
 export interface ReactionRepository {
   create: (userId: string, postId: string, data: CreateReactionInputDTO) => Promise<ReactionDTO>
@@ -7,7 +8,7 @@ export interface ReactionRepository {
   getReactionById: (reactionId: string) => Promise<ReactionDTO | null>
   getReactionType: (reactionType: ReactionTypeEnum) => Promise<ReactionTypeDTO | null>
   getReactionTypeById: (reactionTypeId: string) => Promise<ReactionTypeDTO | null>
-  getReactionsByPostId: (postId: string, reactionType: ReactionTypeDTO) => Promise<ExtendedReactionDTO[]>
+  getReactionsByPostId: (postId: string, reactionType: ReactionTypeDTO, options: CursorPagination) => Promise<ExtendedReactionDTO[]>
   getReactionsByUserId: (userId: string, reactionType: ReactionTypeDTO) => Promise<ReactionDTO[]>
   getReactionByPostIdAndUserId: (userId: string, postId: string, reactionType: ReactionTypeDTO) => Promise<ReactionDTO | null>
   getAllReactionTypes: () => Promise<ReactionTypeDTO[]>

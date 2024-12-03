@@ -1,8 +1,9 @@
 import { ReactionRepository } from '@domains/reaction/repository/reaction.repository'
 import { CreateReactionInputDTO, ExtendedReactionDTO, ReactionDTO, ReactionTypeDTO } from '@domains/reaction/dto'
-import { PrismaClient } from '@prisma/client'
+import { PostInteractionCount, PrismaClient } from '@prisma/client'
 import { ReactionTypeEnum } from '@domains/reaction/type'
 import { NotFoundException } from '@utils'
+import { CursorPagination } from '@types';
 
 export class ReactionRepositoryImpl implements ReactionRepository {
   constructor (private readonly db: PrismaClient) {}
@@ -39,8 +40,11 @@ export class ReactionRepositoryImpl implements ReactionRepository {
     return reaction ? new ReactionDTO(reaction) : null
   }
 
-  async getReactionsByPostId (postId: string, reactionType: ReactionTypeDTO): Promise<ExtendedReactionDTO[]> {
+  async getReactionsByPostId (postId: string, reactionType: ReactionTypeDTO, options: CursorPagination): Promise<ExtendedReactionDTO[]> {
     const reactions = await this.db.postReaction.findMany({
+      cursor: options.after ? { id: options.after } : (options.before) ? { id: options.before } : undefined,
+      skip: options.after ?? options.before ? 1 : undefined,
+      take: options.limit ? (options.before ? -options.limit : options.limit) : undefined,
       where: {
         postId,
         typeId: reactionType.id
@@ -50,6 +54,7 @@ export class ReactionRepositoryImpl implements ReactionRepository {
         type: true
       }
     })
+    await this.syncReactionCount(postId, reactionType.id, reactions.length)
     return reactions.map(reaction => {
       return new ExtendedReactionDTO({
         ...reaction,
@@ -105,5 +110,73 @@ export class ReactionRepositoryImpl implements ReactionRepository {
       }
     })
     return reactionType ? new ReactionTypeDTO({ id: reactionType.id, name: reactionType.name as ReactionTypeEnum }) : null
+  }
+
+  private async getExistingReactionCount (postId: string, reactionTypeId: string): Promise<PostInteractionCount | null> {
+    const count = await this.db.postInteractionCount.findUnique({
+      where: {
+        postId_typeId: {
+          postId,
+          typeId: reactionTypeId
+        }
+      }
+    })
+    return count ?? null
+  }
+
+  private isUpdateRecent (lastUpdatedAt: Date, thresholdInMinutes: number = 5): boolean {
+    const currentTime = new Date()
+    const timeDiff = currentTime.getTime() - lastUpdatedAt.getTime()
+    const thresholdInMs = thresholdInMinutes * 60 * 1000
+    return timeDiff < thresholdInMs
+  }
+
+  private async syncReactionCount (postId: string, reactionTypeId: string, value: number): Promise<void> {
+    const existingCount = await this.getExistingReactionCount(postId, reactionTypeId)
+
+    if (!existingCount) {
+      await this.createReactionCount(postId, reactionTypeId, value)
+      return
+    }
+
+    if (this.isUpdateRecent(existingCount.updatedAt, this.calculateWaitTimeWithAsymptote(existingCount.count))) {
+      return
+    }
+
+    await this.updateReactionCount(postId, reactionTypeId, value)
+  }
+
+  private calculateWaitTimeWithAsymptote (likes: number): number {
+    const A = 10080 // Asymptote of 7 days in minutes
+    const B = 500 // Curvature value
+    // This function let posts with fewer reactions to update faster than posts with a lot of reactions
+
+    const waitTime = (A * likes) / (B + likes)
+
+    return waitTime * 60 * 1000
+  }
+
+  private async createReactionCount (postId: string, reactionTypeId: string, value: number): Promise<void> {
+    await this.db.postInteractionCount.create({
+      data: {
+        postId,
+        typeId: reactionTypeId,
+        count: value
+      }
+    })
+  }
+
+  private async updateReactionCount (postId: string, reactionTypeId: string, value: number): Promise<void> {
+    await this.db.postInteractionCount.update({
+      where: {
+        postId_typeId: {
+          postId,
+          typeId: reactionTypeId
+        }
+      },
+      data: {
+        count: value
+      }
+    })
   }
 }

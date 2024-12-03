@@ -31,8 +31,9 @@ reactionRouter.delete('/:reactionId', async (req, res) => {
 reactionRouter.get('/all/:postId/type/:reactionTypeId', async (req, res) => {
   const { userId } = res.locals.context
   const { postId, reactionTypeId } = req.params
+  const { limit, before, after } = req.query as Record<string, string>
 
-  const reactions = await service.getReactionsByPostId(userId, postId, reactionTypeId)
+  const reactions = await service.getReactionsByPostId(userId, postId, reactionTypeId, { limit: Number(limit), before, after })
 
   return res.status(HttpStatus.OK).json(reactions)
 })
