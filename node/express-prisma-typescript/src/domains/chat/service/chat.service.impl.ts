@@ -5,6 +5,7 @@ import { validate } from 'class-validator'
 import { ChatRepository } from '@domains/chat/repository/chat.repository'
 import { ForbiddenException, NotFoundException } from '@utils'
 import { FollowerService } from '@domains/follower/service/follower.service'
+import { UserViewDTO } from '@domains/user/dto';
 
 export class ChatServiceImpl implements ChatService {
   constructor (
@@ -94,5 +95,12 @@ export class ChatServiceImpl implements ChatService {
   private async checkIfRoomExists (roomId: string): Promise<void> {
     const room = await this.repository.getRoom(roomId)
     if (!room) throw new NotFoundException('room')
+  }
+
+  async getRoomParticipants (userId: string, roomId: string): Promise<UserViewDTO[]> {
+    const participants = await this.repository.getRoomParticipants(roomId)
+    const isUserInRoom = participants.some(participant => participant.id === userId);
+    if (!isUserInRoom) throw new ForbiddenException()
+    return participants
   }
 }

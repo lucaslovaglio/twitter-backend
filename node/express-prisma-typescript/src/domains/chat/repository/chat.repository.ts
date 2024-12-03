@@ -1,5 +1,5 @@
 import { CreateRoomInputDTO, MessageDTO, RoomDTO } from '@domains/chat/dto'
-import { UserDTO } from '@domains/user/dto';
+import { UserDTO, UserViewDTO } from '@domains/user/dto';
 
 export interface ChatRepository {
   createRoom: (userId: string, data: CreateRoomInputDTO) => Promise<RoomDTO>
@@ -15,4 +15,5 @@ export interface ChatRepository {
   getOwnerIdOfRoom: (roomId: string) => Promise<string | null>
   isUserInRoom: (userId: string, roomId: string) => Promise<boolean>
   getUserFromRoom: (userId: string, roomId: string) => Promise<UserDTO | null>
+  getRoomParticipants: (roomId: string) => Promise<UserViewDTO[]>
 }

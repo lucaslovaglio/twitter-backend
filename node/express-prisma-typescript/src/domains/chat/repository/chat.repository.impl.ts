@@ -1,8 +1,7 @@
 import { ChatRepository } from '@domains/chat/repository/chat.repository'
 import { CreateRoomInputDTO, MessageDTO, RoomDTO } from '@domains/chat/dto'
-import { UserDTO } from '@domains/user/dto'
+import { UserDTO, UserViewDTO } from '@domains/user/dto';
 import { PrismaClient } from '@prisma/client'
-import { Logger } from '@utils'
 
 export class ChatRepositoryImpl implements ChatRepository {
   constructor (private readonly db: PrismaClient) {}
@@ -138,5 +137,17 @@ export class ChatRepositoryImpl implements ChatRepository {
         }
       }
     })
+  }
+
+  async getRoomParticipants (roomId: string): Promise<UserViewDTO[]> {
+    const participants = await this.db.userRoom.findMany({
+      where: {
+        roomId
+      },
+      include: {
+        user: true
+      }
+    })
+    return participants.map(participant => new UserViewDTO(participant.user))
   }
 }

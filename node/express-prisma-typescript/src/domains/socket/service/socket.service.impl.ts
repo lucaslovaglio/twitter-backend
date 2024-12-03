@@ -53,7 +53,6 @@ export class SocketServiceImpl implements SocketService {
 
   private connect (socket: Socket): void {
     Logger.info(`${SocketMessages.NEW_CONNECTION}: ${socket.id}`)
-    socket.emit(SocketEvents.PARTICIPANTS, [])
   }
 
   private disconnect (socket: Socket): void {
@@ -82,7 +81,7 @@ export class SocketServiceImpl implements SocketService {
 
   private async setNickname (socket: Socket): Promise<void> {
     const user = await this.userService.getUser(socket.data.user.userId)
-    const name = user.name ? user.name : user.id
+    const name = user.username ? user.username : user.id
     socket.data.nickname = name
     Logger.info(`${socket.id} set their nickname to ${name}`)
   }
