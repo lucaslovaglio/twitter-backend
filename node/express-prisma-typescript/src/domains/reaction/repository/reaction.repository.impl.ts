@@ -1,5 +1,5 @@
 import { ReactionRepository } from '@domains/reaction/repository/reaction.repository'
-import { CreateReactionInputDTO, ReactionDto, ReactionTypeDTO } from '@domains/reaction/dto'
+import { CreateReactionInputDTO, ExtendedReactionDTO, ReactionDTO, ReactionTypeDTO } from '@domains/reaction/dto'
 import { PrismaClient } from '@prisma/client'
 import { ReactionTypeEnum } from '@domains/reaction/type'
 import { NotFoundException } from '@utils'
@@ -7,7 +7,7 @@ import { NotFoundException } from '@utils'
 export class ReactionRepositoryImpl implements ReactionRepository {
   constructor (private readonly db: PrismaClient) {}
 
-  async create (userId: string, postId: string, data: CreateReactionInputDTO): Promise<ReactionDto> {
+  async create (userId: string, postId: string, data: CreateReactionInputDTO): Promise<ReactionDTO> {
     const reactionType: ReactionTypeDTO | null = await this.getReactionType(data.reactionType)
     if (!reactionType) {
       throw new NotFoundException('reaction type')
@@ -19,7 +19,7 @@ export class ReactionRepositoryImpl implements ReactionRepository {
         postId
       }
     })
-    return new ReactionDto(reaction)
+    return new ReactionDTO(reaction)
   }
 
   async delete (reactionId: string): Promise<void> {
@@ -30,33 +30,42 @@ export class ReactionRepositoryImpl implements ReactionRepository {
     })
   }
 
-  async getReactionById (reactionId: string): Promise<ReactionDto | null> {
+  async getReactionById (reactionId: string): Promise<ReactionDTO | null> {
     const reaction = await this.db.postReaction.findUnique({
       where: {
         id: reactionId
       }
     })
-    return reaction ? new ReactionDto(reaction) : null
+    return reaction ? new ReactionDTO(reaction) : null
   }
 
-  async getReactionsByPostId (postId: string, reactionType: ReactionTypeDTO): Promise<ReactionDto[]> {
+  async getReactionsByPostId (postId: string, reactionType: ReactionTypeDTO): Promise<ExtendedReactionDTO[]> {
     const reactions = await this.db.postReaction.findMany({
       where: {
         postId,
         typeId: reactionType.id
+      },
+      include: {
+        user: true,
+        type: true
       }
     })
-    return reactions.map(reaction => new ReactionDto(reaction))
+    return reactions.map(reaction => {
+      return new ExtendedReactionDTO({
+        ...reaction,
+        type: { id: reactionType.id, name: reactionType.name }
+      })
+    })
   }
 
-  async getReactionsByUserId (userId: string, reactionType: ReactionTypeDTO): Promise<ReactionDto[]> {
+  async getReactionsByUserId (userId: string, reactionType: ReactionTypeDTO): Promise<ReactionDTO[]> {
     const reactions = await this.db.postReaction.findMany({
       where: {
         userId,
         typeId: reactionType.id
       }
     })
-    return reactions.map(reaction => new ReactionDto(reaction))
+    return reactions.map(reaction => new ReactionDTO(reaction))
   }
 
   async getAllReactionTypes (): Promise<ReactionTypeDTO[]> {
@@ -69,7 +78,7 @@ export class ReactionRepositoryImpl implements ReactionRepository {
     )
   }
 
-  async getReactionByPostIdAndUserId (userId: string, postId: string, reactionType: ReactionTypeDTO): Promise<ReactionDto | null> {
+  async getReactionByPostIdAndUserId (userId: string, postId: string, reactionType: ReactionTypeDTO): Promise<ReactionDTO | null> {
     const reaction = await this.db.postReaction.findFirst({
       where: {
         postId,
@@ -77,7 +86,7 @@ export class ReactionRepositoryImpl implements ReactionRepository {
         typeId: reactionType.id
       }
     })
-    return reaction ? new ReactionDto(reaction) : null
+    return reaction ? new ReactionDTO(reaction) : null
   }
 
   async getReactionType (reactionType: ReactionTypeEnum): Promise<ReactionTypeDTO | null> {

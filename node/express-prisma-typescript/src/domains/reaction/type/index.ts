@@ -1,4 +1,5 @@
 export enum ReactionTypeEnum {
   LIKE = 'like',
-  RETWEET = 'retweet'
+  RETWEET = 'retweet',
+  COMMENT = 'comment'
 }

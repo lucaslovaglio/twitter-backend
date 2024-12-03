@@ -16,7 +16,6 @@ reactionRouter.post('/:postId', BodyValidation(CreateReactionInputDTO), async (r
   const data = req.body
 
   const reaction = await service.createReaction(userId, postId, data)
-
   return res.status(HttpStatus.CREATED).json(reaction)
 })
 
